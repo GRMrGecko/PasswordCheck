@@ -31,8 +31,8 @@ $_MGM['adminEmail'] = "support@gec.im";
 $_MGM['DBType'] = "MYSQLPDO"; // MYSQL, POSTGRESQL, SQLITE.
 $_MGM['DBPersistent'] = false;
 $_MGM['DBHost'] = "localhost";
-$_MGM['DBUser'] = "passwords";
-$_MGM['DBPassword'] = "";
+$_MGM['DBUser'] = "root";
+$_MGM['DBPassword'] = "password";
 $_MGM['DBName'] = "passwords"; // File location for SQLite.
 $_MGM['DBPort'] = 0; // 3306 = MySQL Default, 5432 = PostgreSQL Default.
 $_MGM['DBPrefix'] = "";
@@ -81,13 +81,16 @@ function generateURL($path) {
 	return "http".($_MGM['ssl'] ? "s" : "")."://".$_MGM['domain'].(((!$_MGM['ssl'] && $_MGM['port']==80) || ($_MGM['ssl'] && $_MGM['port']==443)) ? "" : ":{$_MGM['port']}").$_MGM['installPath'].$path;
 }
 
+
+if ($_MGM['path'][0]=="api") {
+	require("code/api.php");
+} else if ($_MGM['path'][0]=="js" && $_MGM['path'][1]=="zxcvbn-async.js") {// To set correct path for dynamic loading.
+	require("js/zxcvbn-async.php");
+	exit();
+}
+
 if ($_MGM['path'][0]!="") {
 	require("code/404.php");
 }
-
-connectToDatabase();
-
 require("code/index.php");
-
-closeDatabase();
 ?>

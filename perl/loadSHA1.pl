@@ -31,42 +31,47 @@ sub trim($) {
 	my $string = shift;
 	$string =~ s/^\s+//;
 	$string =~ s/\s+$//;
+	$string =~ s/^\t+//;
+	$string =~ s/\t+$//;
+	$string =~ s/^\s+//;
+	$string =~ s/\s+$//;
+	$string =~ s/^\t+//;
+	$string =~ s/\t+$//;
+	$string =~ s/\n//g;
+	$string =~ s/\r//g;
 	return $string;
-}
-sub clean($) {
-	my $string = shift;
-	$string =~ s/"/""/g;
-	$string =~ s/\n//;
-	$string =~ s/\r//;
-	return "\"$string\"";
 }
 
 $dbHost = "127.0.0.1";
-$dbName = "test";
+$dbName = "passwords";
 $dbUser = "root";
-$dbPassword = "";
+$dbPassword = "password";
+
+$file = "/Users/grmrgecko/Desktop/passwords/SHA1.txt";
 
 #print localtime(time).": Connecting to DataBase\n";
 
 $dbConnection = DBI->connect("DBI:mysql:$dbName;host=$dbHost", $dbUser, $dbPassword) || die "Could not connect to database: $DBI::errstr";
 
-open(passwords, ">/Users/grmrgecko/Desktop/passwords.csv");
-
-my $result = $dbConnection->prepare("SELECT `password`,COUNT(`email`) AS `count` FROM users GROUP BY `password` ORDER BY `count` DESC LIMIT 500;");
-$result->execute();
-while (@data = $result->fetchrow_array()) {
-	my $i = 0;
-	foreach (@data) {
-		if ($i!=0) {
-			print passwords ",";
-		}
-		print passwords clean($_);
-		$i++;
+open(passwords, $file);
+my $i=0;
+while (<passwords>) {
+	chomp;
+	$i++;
+	my $sha1 = trim($_);
+	print $i.": ".$sha1."\n";
+	my $result = $dbConnection->prepare("SELECT * FROM `sha1` WHERE `hash`=?");
+	$result->execute($sha1);
+	my $exists = $result->fetchrow_hashref();
+	if ($exists!=undef) {
+		$result->finish();
+		next;
 	}
-	print passwords "\n";
+	$result->finish();
+	my $result = $dbConnection->prepare("INSERT INTO `sha1` (`hash`,`leak`) VALUES (?,'LinkedIn')");
+	$result->execute($sha1);
+	$result->finish();
 }
-$result->finish();
-
 close(passwords);
 
 $dbConnection->disconnect();

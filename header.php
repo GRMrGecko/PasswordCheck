@@ -22,6 +22,9 @@
 	<script type="text/javascript" src="<?=$_MGM['installPath']?>js/jquery.min.js"></script>
 	<script type="text/javascript" src="<?=$_MGM['installPath']?>js/bootstrap-3.1.1.min.js"></script>
 	<script type="text/javascript" src="<?=$_MGM['installPath']?>js/date.js"></script>
+	<script type="text/javascript" src="<?=$_MGM['installPath']?>js/sha1.js"></script>
+	<script type="text/javascript" src="<?=$_MGM['installPath']?>js/zxcvbn-async.js"></script>
+	<script type="text/javascript" src="https://www.google.com/recaptcha/api/js/recaptcha_ajax.js"></script>
 </head>
 
 <body>

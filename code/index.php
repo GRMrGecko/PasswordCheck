@@ -23,184 +23,137 @@
 
 require_once("header.php");
 
-$publickey = "";
-$privatekey = "";
-
-function matchEmails($email) {
-	$query = "SELECT * FROM users WHERE";
-	$arguments = array();
-	$email = strtolower($email);
-	
-	preg_match("/([^@]*)@(.*)$/i", $email, $matches);
-	$user = $matches[1];
-	$domain = $matches[2];
-	if ($domain=="gmail.com" || $domain=="googlemail.com") {
-		$query .= " `email`=%s";
-		array_push($arguments, $user."@gmail.com");
-		$query .= " OR `email`=%s";
-		array_push($arguments, $user."@googlemail.com");
-		$query .= " OR `email` LIKE %s";
-		array_push($arguments, str_replace("%", "\\%", $user)."+%@gmail.com");
-		$query .= " OR `email` LIKE %s";
-		array_push($arguments, str_replace("%", "\\%", $user)."+%@googlemail.com");
-	} else if ($domain=="ymail.com" || $domain=="yahoo.com") {
-		$query .= " `email`=%s";
-		array_push($arguments, $user."@ymail.com");
-		$query .= " OR `email`=%s";
-		array_push($arguments, $user."@yahoo.com");
-		$query .= " OR `email` LIKE %s";
-		array_push($arguments, str_replace("%", "\\%", $user)."+%@ymail.com");
-		$query .= " OR `email` LIKE %s";
-		array_push($arguments, str_replace("%", "\\%", $user)."+%@yahoo.com");
-	} else if ($domain=="hotmail.com" || $domain=="outlook.com") {
-		$query .= " `email`=%s";
-		array_push($arguments, $user."@hotmail.com");
-		$query .= " OR `email`=%s";
-		array_push($arguments, $user."@outlook.com");
-		$query .= " OR `email` LIKE %s";
-		array_push($arguments, str_replace("%", "\\%", $user)."+%@hotmail.com");
-		$query .= " OR `email` LIKE %s";
-		array_push($arguments, str_replace("%", "\\%", $user)."+%@outlook.com");
-	} else {
-		$query .= " `email`=%s";
-		array_push($arguments, $user."@".$domain);
-		$query .= " OR `email` LIKE %s";
-		array_push($arguments, str_replace("%", "\\%", $user)."+%@".$domain);
-	}
-	$queryAarray = array($query);
-	for ($i=0; $i<count($arguments); $i++) {
-		array_push($queryAarray, $arguments[$i]);
-	}
-	$results = call_user_func_array('databaseQuery', $queryAarray);
-	return $results;
-}
-
-$counts = databaseQuery("SELECT value FROM settings WHERE name='passwords'");
+connectToDatabase();
+$counts = databaseQuery("SELECT value FROM settings WHERE name='email'");
 $count = databaseFetchAssoc($counts);
 ?>
-Total count of passwords in database is <?=number_format($count['value'])?>.<br /><br />
+Total count of email and passwords in database is <?=number_format($count['value'])?>.<br />
+<?
+$counts = databaseQuery("SELECT value FROM settings WHERE name='hashed'");
+$count = databaseFetchAssoc($counts);
+?>
+Total count of hashed passwords in database is <?=number_format($count['value'])?>.<br /><br />
 <div class="jumbotron">
 	<div class="centered">
-		<h1>Check your email</h1>
+		<h2>Check your email</h2>
 		<p>
-			<form role="form" id="search_start_form">
-				<div class="row">
-					<div class="col-lg-8">
-						<div class="input-group">
-							<input class="form-control search-query" type="text" placeholder="Email Address" id="search_start_field" name="email" value="<?=htmlspecialchars($_REQUEST['email'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true)?>" />
-							<span class="input-group-btn">
-								<button class="btn btn-default" type="submit">Check</button>
-							</span>
-						</div>
+			This checks your email address against leaks of passwords and email addresses. If a match is found, you can have my server email you the password through gmail via ssl with settings to automatically permanently delete sent emails.
+		</p>
+		<p>
+			<div class="row">
+				<div class="col-lg-8">
+					<div class="input-group">
+						<input class="form-control email" type="text" placeholder="Email Address" id="email_field" name="email" value="<?=htmlspecialchars($_REQUEST['email'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true)?>" />
+						<span class="input-group-btn">
+							<button class="btn btn-default" id="email_check">Check</button>
+						</span>
 					</div>
 				</div>
-			</form>
+			</div>
 		</p>
-		<?
-		if (!empty($_REQUEST['email']) && $_REQUEST['sendemail']==1) {
-			if (!filter_var($_REQUEST['email'], FILTER_VALIDATE_EMAIL)) {
-				?><h3>What was entered is not an email address.</h3><?
-			} else {
-				require_once('recaptchalib.php');
-				$resp = recaptcha_check_answer($privatekey,
-                                $_SERVER["REMOTE_ADDR"],
-                                $_POST["recaptcha_challenge_field"],
-                                $_POST["recaptcha_response_field"]);
-
-				if (!$resp->is_valid) {
-					?><h3>Wrong captcha value.</h3><?
-				} else {
-					$entries = matchEmails($_REQUEST['email']);
-					$count = 0;
-					$passwords = array();
-					while ($entry = databaseFetchAssoc($entries)) {
-						if (!empty($entry['password'])) {
-							$count++;
-							array_push($passwords, $entry['password']);
-						}
-					}
-					if ($count) {
-						$to = $_REQUEST['email'];
-						$subject = "Password(s) requested.";
-						$message = "The password(s) that were found and requested by you or someone else via https://gec.im/passwords/ are listed below:\n\n";
-						for ($i=0; $i<count($passwords); $i++) {
-							$message .= $passwords[$i]."\n";
-						}
-						$message .= "\nIf any of the password(s) listed is one you currently use, make sure that you change your password as soon as possible! Hackers released the password(s) listed and are probably working on the list to try and login to websites you use.\n\nI recomemnd that you use a password database to create secure passwords: https://lastpass.com/ https://agilebits.com/onepassword http://keepass.info/\nThis is a free service provided by James Coleman at https://mrgecko.org/";
-						$additionalHeaders = array("Reply-To" => "James Coleman <james@coleman.io>");
-
-						$ch = curl_init();//Using custom email server which automatically deletes sent email.
-						curl_setopt_array($ch, array(
-							CURLOPT_URL => "http://127.0.0.1:28001/",
-							CURLOPT_RETURNTRANSFER => true,
-							CURLOPT_POST => true,
-							CURLOPT_POSTFIELDS => http_build_query(array(
-								"user" => "password@birdim.com",
-								"from" => "password@gec.im",
-								"from-name" => "Password Check",
-								"to" => $to,
-								"subject" => $subject,
-								"message" => $message,
-								"headers" => json_encode($additionalHeaders)
-								)),
-							CURLOPT_HTTPHEADER, array("Content-Type: application/x-www-form-urlencoded")
-							));
-						$result = curl_exec($ch);
-						curl_close($ch);
-						$response = json_decode($result);
-						if ($response->success) {
-							?>
-							<h3 style="color: #ff0000"><?=$count?> password(s) were emailed.</h3>
-							<?
-						} else {
-							?>
-							<h3 style="color: #ff0000">Error sending email, please contact <a href="mailto:james@coleman.io">james@coleman.io</a>.</h3>
-							<?
-						}
-					} else {
-						?>
-						<h3>Failed as email address could not be found.</h3>
-						<?
-					}
-				}
-			}
-		} else if (!empty($_REQUEST['email'])) {
-			if (!filter_var($_REQUEST['email'], FILTER_VALIDATE_EMAIL)) {
-				?><h3>What was entered is not an email address.</h3><?
-			} else {
-				$entries = matchEmails($_REQUEST['email']);
-				$count = 0;
-				while ($entry = databaseFetchAssoc($entries)) {
-					if (!empty($entry['password'])) {
-						$count++;
-					}
-				}
-				if ($count) {
-					require_once('recaptchalib.php');
-					?>
-					<h3 style="color: #ff0000"><?=$count?> password(s) found for your email address.</h3>
-					<p><form action="<?=generateURL("?sendemail=1")?>" method="post">
-						<?=recaptcha_get_html($publickey, null, true)?>
-						<input type="hidden" name="email" value="<?=htmlspecialchars($_REQUEST['email'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true)?>" />
-						<button type="submit" class="btn btn-primary">Email password(s) to me</button>
-					</form></p>
-					<?
-				} else {
-					?>
-					<h3>There were no passwords found.</h3>
-					<?
-				}
-			}
-		}
-		?>
+		<span id="email_loader"></span>
+		<script type="text/javascript">
+		$("#email_check").click(function() {
+			$("#email_loader").load("<?=$_MGM['installPath']?>api/email", {email: $("#email_field").val()}, function(response, status, xhr) {
+				
+			});
+		});
+		</script>
 	</div>
 </div>
-This is a service to check to see if your password was leaked via the leak <a href="http://lifehacker.com/5-million-gmail-passwords-leaked-check-yours-now-1632983265" target="_blank">http://lifehacker.com/5-million-gmail-passwords-leaked-check-yours-now-1632983265</a> and verify that it is a password you use. This server does not log anything and it is <a href="https://en.wikipedia.org/wiki/Transport_Layer_Security" target="_blank">ssl encrypted</a>. All that is required for you to check your password is your email address. There is no need to enter your password and also if you enter your password it will fail the search as it only wants an email address!<br /><br />
-When you tell my server to email you your password, it will send an email via ssl gmail to your account. The email account which is used has a strong random password and has a filter to auto delete emails sent. If the password that you receive is one you use, quickly change it as hackers have it and are likely trying to get into your accounts now!<br /><br />
+<div class="jumbotron">
+	<div class="centered">
+		<h2>Check your password</h2>
+		<p>
+			<span style="color: #ff0000">Only enter your password on a website you trust!</span><br />If you trust me and what I say below, go ahead and enter your password.<br /><br />
+			This field uses <a href="https://en.wikipedia.org/wiki/JavaScript" target="_blank">JavaScript</a> to check the strength of your password. Clicking the check button will <a href="https://en.wikipedia.org/wiki/Hash_function" target="_blank">hash</a> your password using JavaScript and send the hash to my server to check against my hash database for leaked passwords.
+		</p>
+		<p>
+			<style>
+			.password {
+				width:;
+			}
+			#password_score {
+				height: 5px;
+			}
+			.score_0 {
+				width: 1%;
+				background-color: #ff0000;
+			}
+			.score_1 {
+				width: 25%;
+				background-color: #ff7f00;
+			}
+			.score_2 {
+				width: 50%;
+				background-color: #ffff00;
+			}
+			.score_3 {
+				width: 75%;
+				background-color: #7f007f;
+			}
+			.score_4 {
+				width: 100%;
+				background-color: #00ff00;
+			}
+			</style>
+			<div class="row">
+				<div class="col-lg-8">
+					<div class="input-group">
+						<input class="form-control password" type="password" placeholder="Password" id="password_field" />
+						<span class="input-group-btn">
+							<input class="btn btn-default" type="button" id="password_show" value="Show">
+						</span>
+					</div>
+					<div id="password_score" class="score_0">&nbsp;</div>
+					<div id="password_stats"></div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-8">
+					<div class="input-group">
+						<input class="form-control sha1" type="text" placeholder="SHA1" id="sha1_field" name="sha1" value="<?=htmlspecialchars($_REQUEST['sha1'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true)?>" />
+						<span class="input-group-btn">
+							<button class="btn btn-default" id="hash_check">Check</button>
+						</span>
+					</div>
+				</div>
+			</div>
+			<script type="text/javascript">
+			$("#password_show").click(function() {
+				if ($("#password_field").attr("type")=="password") {
+					$("#password_field").attr("type", "text");
+					$("#password_show").val("Hide");
+				} else {
+					$("#password_field").attr("type", "password");
+					$("#password_show").val("Show");
+				}
+			});
+			$("#password_field").bind("input paste", function(event){
+				var result = zxcvbn($(this).val());
+				$("#password_score").attr("class", "score_"+result.score);
+				$("#password_stats").html("Entropy: "+result.entropy+"<br />Estimated time for hackers to crack: "+result.crack_time_display+"<br />Estimated time for hackers to crack in seconds: "+result.crack_time);
+				$("#sha1_field").val(CryptoJS.SHA1($(this).val()).toString());
+			});
+			</script>
+		</p>
+		<span id="hash_loader"></span>
+		<script type="text/javascript">
+		$("#hash_check").click(function() {
+			$("#hash_loader").load("<?=$_MGM['installPath']?>api/hash", {sha1: $("#sha1_field").val()}, function(response, status, xhr) {
+			
+			});
+		});
+		</script>
+	</div>
+</div>
+This server does not log anything and it is <a href="https://en.wikipedia.org/wiki/Transport_Layer_Security" target="_blank">ssl encrypted</a>. Any activity done on this page is safe from anyone including myself. If you don't trust me, download my source code and re-implement this on your own server.<br /><br />
 If you would like to see the top 500 passwords in this database, visit <a href="https://gec.im/passwords.csv">https://gec.im/passwords.csv</a>.<br /><br />
 If you find another leak of passwords, email me at <a href="mailto:james@coleman.io">james@coleman.io</a> and I will see if I can get data to import.<br /><br />
 Recommended password database software to use includes: <a href="https://lastpass.com/" target="_blank">https://lastpass.com/</a> <a href="https://agilebits.com/onepassword" target="_blank">https://agilebits.com/onepassword</a> <a href="http://keepass.info/" target="_blank">http://keepass.info/</a><br /><br />
-Source code for this site is at <a href="https://github.com/GRMrGecko/PasswordCheck" target="_blank">https://github.com/GRMrGecko/PasswordCheck</a>
+Source code for this site is at <a href="https://github.com/GRMrGecko/PasswordCheck" target="_blank">https://github.com/GRMrGecko/PasswordCheck</a><br /><br />
+External code used is <a href="https://code.google.com/p/crypto-js/" target="_blank">CryptoJS</a>, <a href="https://developers.google.com/recaptcha/docs/php" target="_blank">recaptchalib</a>, <a href="https://github.com/dropbox/zxcvbn" target="_blank">zxcvbn</a>, <a href="https://jquery.com/" target="_blnak">jQuery</a>, and <a href="http://getbootstrap.com/" target="_blank">Bootstrap</a>.
 <?
 require_once("footer.php");
+closeDatabase();
 ?>

@@ -21,6 +21,8 @@
 # THE SOFTWARE.
 #
 
+use Digest::SHA1  qw(sha1 sha1_hex);
+
 #DBD::mysql
 use DBI;
 
@@ -31,15 +33,23 @@ sub trim($) {
 	my $string = shift;
 	$string =~ s/^\s+//;
 	$string =~ s/\s+$//;
+	$string =~ s/^\t+//;
+	$string =~ s/\t+$//;
+	$string =~ s/^\s+//;
+	$string =~ s/\s+$//;
+	$string =~ s/^\t+//;
+	$string =~ s/\t+$//;
+	$string =~ s/\n//g;
+	$string =~ s/\r//g;
 	return $string;
 }
 
 $dbHost = "127.0.0.1";
-$dbName = "test";
+$dbName = "passwords";
 $dbUser = "root";
-$dbPassword = "";
+$dbPassword = "password";
 
-$file = "/Users/grmrgecko/Desktop/passwords/Gmail.txt";
+$file = "/Users/grmrgecko/Desktop/passwords.csv";
 
 #print localtime(time).": Connecting to DataBase\n";
 
@@ -49,25 +59,20 @@ open(passwords, $file);
 my $i=0;
 while (<passwords>) {
 	chomp;
-	my $entry = $_;
-	if ($entry =~ m/([^:]+):(.*)$/) {
-		$i++;
-		my $email = $1;
-		my $password = $2;
-		$password =~ s/\n//g;
-		$password =~ s/\r//g;
-		print "$i Email: $email Password: $password\n";
-		my $result = $dbConnection->prepare("SELECT * FROM users WHERE `email`=? AND `password`=?");
-		$result->execute($email, $password);
-		$exists = $result->fetchrow_hashref();
-		if ($exists!=undef) {
-			next;
-		}
+	$i++;
+	my $sha1 = sha1_hex(trim($_));
+	print $i.": ".$sha1."\n";
+	my $result = $dbConnection->prepare("SELECT * FROM `sha1` WHERE `hash`=?");
+	$result->execute($sha1);
+	my $exists = $result->fetchrow_hashref();
+	if ($exists!=undef) {
 		$result->finish();
-		my $result = $dbConnection->prepare("INSERT INTO `users` (`email`,`password`) VALUES (?,?)");
-		$result->execute($email, $password);
-		$result->finish();
+		next;
 	}
+	$result->finish();
+	my $result = $dbConnection->prepare("INSERT INTO `sha1` (`hash`,`leak`) VALUES (?,'Email Database')");
+	$result->execute($sha1);
+	$result->finish();
 }
 close(passwords);
 
