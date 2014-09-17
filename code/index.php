@@ -37,7 +37,7 @@ Total count of hashed passwords in database is <?=number_format($count['value'])
 	<div class="centered">
 		<h2>Check your email</h2>
 		<p>
-			This checks your email address against leaks of passwords and email addresses. If a match is found, you can have my server email you the password through gmail via ssl with settings to automatically permanently delete sent emails.
+			This checks your email address against passwords and email addresses which have been stolen by hackers. If a match is found, you can have my server email you the password through gmail via ssl with settings to automatically permanently delete sent emails.
 		</p>
 		<p>
 			<div class="row">
@@ -53,10 +53,17 @@ Total count of hashed passwords in database is <?=number_format($count['value'])
 		</p>
 		<span id="email_loader"></span>
 		<script type="text/javascript">
+		function loadEmail() {
+			$("#email_loader").load("<?=$_MGM['installPath']?>api/email", {email: $("#email_field").val()}, function(response, status, xhr) {});
+		}
+		$("#email_field").keydown(function(event) {
+			var code = (event.keyCode==undefined ? event.which : event.keyCode);
+			if (code==13) {
+				 loadEmail();
+			}
+		});
 		$("#email_check").click(function() {
-			$("#email_loader").load("<?=$_MGM['installPath']?>api/email", {email: $("#email_field").val()}, function(response, status, xhr) {
-				
-			});
+			loadEmail();
 		});
 		</script>
 	</div>
@@ -66,7 +73,7 @@ Total count of hashed passwords in database is <?=number_format($count['value'])
 		<h2>Check your password</h2>
 		<p>
 			<span style="color: #ff0000">Only enter your password on a website you trust!</span><br />If you trust me and what I say below, go ahead and enter your password.<br /><br />
-			This field uses <a href="https://en.wikipedia.org/wiki/JavaScript" target="_blank">JavaScript</a> to check the strength of your password. Clicking the check button will <a href="https://en.wikipedia.org/wiki/Hash_function" target="_blank">hash</a> your password using JavaScript and send the hash to my server to check against my hash database for leaked passwords.
+			This field uses <a href="https://en.wikipedia.org/wiki/JavaScript" target="_blank">JavaScript</a> to check the strength of your password. Clicking the check button will <a href="https://en.wikipedia.org/wiki/Hash_function" target="_blank">hash</a> your password using JavaScript and send the hash to my server to check against my hash database for stolen passwords.
 		</p>
 		<p>
 			<style>
@@ -139,17 +146,24 @@ Total count of hashed passwords in database is <?=number_format($count['value'])
 		</p>
 		<span id="hash_loader"></span>
 		<script type="text/javascript">
+		function loadHash() {
+			$("#hash_loader").load("<?=$_MGM['installPath']?>api/hash", {sha1: $("#sha1_field").val()}, function(response, status, xhr) {});
+		}
+		$("#sha1_field").keydown(function(event) {
+			var code = (event.keyCode==undefined ? event.which : event.keyCode);
+			if (code==13) {
+				 loadHash();
+			}
+		});
 		$("#hash_check").click(function() {
-			$("#hash_loader").load("<?=$_MGM['installPath']?>api/hash", {sha1: $("#sha1_field").val()}, function(response, status, xhr) {
-			
-			});
+			loadHash();
 		});
 		</script>
 	</div>
 </div>
 This server does not log anything and it is <a href="https://en.wikipedia.org/wiki/Transport_Layer_Security" target="_blank">ssl encrypted</a>. Any activity done on this page is safe from anyone including myself. If you don't trust me, download my source code and re-implement this on your own server.<br /><br />
 If you would like to see the top 500 passwords in this database, visit <a href="https://gec.im/passwords.csv">https://gec.im/passwords.csv</a>.<br /><br />
-If you find another leak of passwords, email me at <a href="mailto:james@coleman.io">james@coleman.io</a> and I will see if I can get data to import.<br /><br />
+If you find more stolen passwords, email me at <a href="mailto:james@coleman.io">james@coleman.io</a> and I will see if I can get data to import.<br /><br />
 Recommended password database software to use includes: <a href="https://lastpass.com/" target="_blank">https://lastpass.com/</a> <a href="https://agilebits.com/onepassword" target="_blank">https://agilebits.com/onepassword</a> <a href="http://keepass.info/" target="_blank">http://keepass.info/</a><br /><br />
 Source code for this site is at <a href="https://github.com/GRMrGecko/PasswordCheck" target="_blank">https://github.com/GRMrGecko/PasswordCheck</a><br /><br />
 External code used is <a href="https://code.google.com/p/crypto-js/" target="_blank">CryptoJS</a>, <a href="https://developers.google.com/recaptcha/docs/php" target="_blank">recaptchalib</a>, <a href="https://github.com/dropbox/zxcvbn" target="_blank">zxcvbn</a>, <a href="https://jquery.com/" target="_blnak">jQuery</a>, and <a href="http://getbootstrap.com/" target="_blank">Bootstrap</a>.

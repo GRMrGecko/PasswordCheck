@@ -189,7 +189,7 @@ if ($_MGM['path'][1]=="email") {
 		$entries = databaseQuery("SELECT * FROM `sha1` WHERE `hash`=%s", $_REQUEST['sha1']);
 		$entry = databaseFetchAssoc($entries);
 		if ($entry!=null) {
-			?><h3 style="color: #ff0000">Password seems to have been leaked to hackers via <?=$entry['leak']?>.</h3><?
+			?><h3 style="color: #ff0000">Password was stolen by hackers via <?=$entry['leak']?>.</h3><?
 		} else {
 			?><h3>No leaks known in this database.</h3><?
 		}
