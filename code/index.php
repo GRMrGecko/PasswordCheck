@@ -70,8 +70,8 @@ Total count of hashed passwords in database is <?=number_format($count['value'])
 		</p>
 		<p>
 			<style>
-			.password {
-				width:;
+			#sha1_field {
+				font-family:monospace;
 			}
 			#password_score {
 				height: 5px;
