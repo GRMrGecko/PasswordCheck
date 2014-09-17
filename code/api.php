@@ -186,7 +186,7 @@ if ($_MGM['path'][1]=="email") {
 } else if ($_MGM['path'][1]=="hash") {
 	connectToDatabase();
 	if (!empty($_REQUEST['sha1'])) {
-		$entries = databaseQuery("SELECT * FROM `sha1` WHERE `hash`=%s", $_REQUEST['sha1']);
+		$entries = databaseQuery("SELECT * FROM `sha1` WHERE `hash`=%s OR `hash`=%s", "00000".substr($_REQUEST['sha1'],5), $_REQUEST['sha1']);// The LinkedIn hashes seemed to have the first 5 characters replaced with 00000 because the person who uploaded on torrent sites decided that they didn't want to share the real hash.
 		$entry = databaseFetchAssoc($entries);
 		if ($entry!=null) {
 			?><h3 style="color: #ff0000">Password was stolen by hackers via <?=$entry['leak']?>.</h3><?
