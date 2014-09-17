@@ -74,7 +74,7 @@ Total count of hashed passwords in database is <?=number_format($count['value'])
 		<h2>Check your password</h2>
 		<p>
 			<span style="color: #ff0000">Only enter your password on a website you trust!</span><br />If you trust me and what I say below, go ahead and enter your password.<br /><br />
-			This field uses <a href="https://en.wikipedia.org/wiki/JavaScript" target="_blank">JavaScript</a> to check the strength of your password. Clicking the check button will <a href="https://en.wikipedia.org/wiki/Hash_function" target="_blank">hash</a> your password using JavaScript and send the hash to my server to check against my hash database for stolen passwords.
+			This field uses <a href="https://en.wikipedia.org/wiki/JavaScript" target="_blank">JavaScript</a> to check the strength of your password. Clicking the check button will send the <a href="https://en.wikipedia.org/wiki/Hash_function" target="_blank">hash</a> of your password to my server to check against my hash database for stolen passwords.
 		</p>
 		<p>
 			<style>
