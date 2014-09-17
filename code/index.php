@@ -54,6 +54,7 @@ Total count of hashed passwords in database is <?=number_format($count['value'])
 		<span id="email_loader"></span>
 		<script type="text/javascript">
 		function loadEmail() {
+			$("#email_loader").html("Loading...");
 			$("#email_loader").load("<?=$_MGM['installPath']?>api/email", {email: $("#email_field").val()}, function(response, status, xhr) {});
 		}
 		$("#email_field").keydown(function(event) {
@@ -147,6 +148,7 @@ Total count of hashed passwords in database is <?=number_format($count['value'])
 		<span id="hash_loader"></span>
 		<script type="text/javascript">
 		function loadHash() {
+			$("#hash_loader").html("Loading...");
 			$("#hash_loader").load("<?=$_MGM['installPath']?>api/hash", {sha1: $("#sha1_field").val()}, function(response, status, xhr) {});
 		}
 		$("#sha1_field").keydown(function(event) {
