@@ -55,6 +55,7 @@ $dbConnection = DBI->connect("DBI:mysql:$dbName;host=$dbHost", $dbUser, $dbPassw
 
 open(passwords, $file);
 my $i=0;
+my $count=0;
 while (<passwords>) {
 	chomp;
 	my $entry = $_;
@@ -66,7 +67,7 @@ while (<passwords>) {
 			next;
 		}
 		print "$i Email: $email Password: $password\n";
-		my $result = $dbConnection->prepare("SELECT * FROM `emailplaintext` WHERE `email`=? AND `password`=?");
+		my $result = $dbConnection->prepare("SELECT * FROM `email` WHERE `email`=? AND `password`=?");
 		$result->execute($email, $password);
 		my $exists = $result->fetchrow_hashref();
 		if ($exists!=undef) {
@@ -74,11 +75,26 @@ while (<passwords>) {
 			next;
 		}
 		$result->finish();
-		my $result = $dbConnection->prepare("INSERT INTO `emailplaintext` (`email`,`password`) VALUES (?,?)");
+		my $result = $dbConnection->prepare("INSERT INTO `emailload` (`email`,`password`,`leak`) VALUES (?,?,'Leak')");
 		$result->execute($email, $password);
 		$result->finish();
+		$count++;
+		if ($count%10000==0) {
+			my $result = $dbConnection->prepare("INSERT INTO `email` (`email`,`password`,`leak`) SELECT `email`,`password`,`leak` FROM `emailload`");
+			$result->execute();
+			$result->finish();
+			my $result = $dbConnection->prepare("DELETE FROM `emailload`");
+			$result->execute();
+			$result->finish();
+		}
 	}
 }
+my $result = $dbConnection->prepare("INSERT INTO `email` (`email`,`password`,`leak`) SELECT `email`,`password`,`leak` FROM `emailload`");
+$result->execute();
+$result->finish();
+my $result = $dbConnection->prepare("DELETE FROM `emailload`");
+$result->execute();
+$result->finish();
 close(passwords);
 
 $dbConnection->disconnect();

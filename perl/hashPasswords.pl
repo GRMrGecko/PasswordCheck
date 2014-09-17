@@ -57,6 +57,7 @@ $dbConnection = DBI->connect("DBI:mysql:$dbName;host=$dbHost", $dbUser, $dbPassw
 
 open(passwords, $file);
 my $i=0;
+my $count=0;
 while (<passwords>) {
 	chomp;
 	$i++;
@@ -70,10 +71,25 @@ while (<passwords>) {
 		next;
 	}
 	$result->finish();
-	my $result = $dbConnection->prepare("INSERT INTO `sha1` (`hash`,`leak`) VALUES (?,'Email Database')");
+	my $result = $dbConnection->prepare("INSERT INTO `hash` (`hash`,`leak`) VALUES (?,'Email Database')");
 	$result->execute($sha1);
 	$result->finish();
+	$count++;
+	if ($count%10000==0) {
+		my $result = $dbConnection->prepare("INSERT INTO `sha1` (`hash`,`leak`) SELECT `hash`,`leak` FROM `hash`");
+		$result->execute();
+		$result->finish();
+		my $result = $dbConnection->prepare("DELETE FROM `hash`");
+		$result->execute();
+		$result->finish();
+	}
 }
+my $result = $dbConnection->prepare("INSERT INTO `sha1` (`hash`,`leak`) SELECT `hash`,`leak` FROM `hash`");
+$result->execute();
+$result->finish();
+my $result = $dbConnection->prepare("DELETE FROM `hash`");
+$result->execute();
+$result->finish();
 close(passwords);
 
 $dbConnection->disconnect();
