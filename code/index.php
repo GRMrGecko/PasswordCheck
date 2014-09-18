@@ -137,10 +137,27 @@ Total count of hashed passwords in database is <?=number_format($count['value'])
 					$("#password_show").val("Show");
 				}
 			});
+			
+			var loadingCheckTimer = null;
 			$("#password_field").bind("input paste", function(event){
-				var result = zxcvbn($(this).val());
-				$("#password_score").attr("class", "score_"+result.score);
-				$("#password_stats").html("Entropy: "+result.entropy+"<br />Estimated time for hackers to crack: "+result.crack_time_display+"<br />Estimated time for hackers to crack in seconds: "+result.crack_time);
+				if (typeof zxcvbn != "function") {
+					$("#password_stats").html("Loading zxcvbn...");
+					if (loadingCheckTimer==null) {
+						loadingCheckTimer = setInterval(function() {
+							if (typeof zxcvbn == "function") {
+								var result = zxcvbn($("#password_field").val());
+								$("#password_score").attr("class", "score_"+result.score);
+								$("#password_stats").html("Entropy: "+result.entropy+"<br />Estimated time for hackers to crack: "+result.crack_time_display+"<br />Estimated time for hackers to crack in seconds: "+result.crack_time);
+								clearInterval(loadingCheckTimer);
+								loadingCheckTimer = null;
+							}
+						}, 200);
+					}
+				} else {
+					var result = zxcvbn($(this).val());
+					$("#password_score").attr("class", "score_"+result.score);
+					$("#password_stats").html("Entropy: "+result.entropy+"<br />Estimated time for hackers to crack: "+result.crack_time_display+"<br />Estimated time for hackers to crack in seconds: "+result.crack_time);
+				}
 				$("#sha1_field").val(CryptoJS.SHA1($(this).val()).toString());
 			});
 			</script>
